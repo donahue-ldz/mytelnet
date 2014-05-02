@@ -1,0 +1,5 @@
+﻿GetStr函数
+
+按起始及结束标记检索出一个字符串的一部分
+语法
+GetStr(SourceStr,StrBegin,StrEnd,IsCut)

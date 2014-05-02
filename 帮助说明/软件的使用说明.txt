@@ -1,0 +1,9 @@
+﻿软件使用
+如果要获得使用帮助，可以输入
+./mytelnet –h （或 ./mytelnet help）
+要登录远程系统，在Linux终端，进入程序所在目录，输入
+./mytelnet [remote_host[remote_port]]
+“remote_host”是远程主机的名称或者ip地址，“remot_port”为远程主机的Telnet服务端口或提供Telnet服务的名称。这时如果远程主机“remote_host”已经开启Telnet服务，即可使用远程主机的用户名和密码从“remot_port”端口登录到远程主机“remote_host”上，“remote_host”和“remote_port”参数不是必须的，“remote_host”的默认值为“localhost”，“remote_port”的默认值为“telnet”。
+本Telnet客户端的转义键为’^]’。
+当提示输入用户名和密码时，就输入远程系统的用户名和密码进行登录（前提是你必须拥有一个所登录的系统的用户名及密码）,登录成功后一般会出现欢迎信息，并允许输入命令来远程控制该系统。（如果登录的是Windows系列系统，也许会出现对输入不响应的现象，可以先按转义字符^]，再按l，把二进制传输方式时的换行方式由LF改为CR-LF。）
+按下转义键后，再按下确定键，就可以看到所有支持的命令。如果想要运行这些命令，则要先按下转义键，再按该命令对应的键。比如按下’^]’键，然后按下’.’键，就会中断Telnet连接。

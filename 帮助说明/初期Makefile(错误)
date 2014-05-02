@@ -1,0 +1,23 @@
+#makefile
+object=common_fsm.o connect.o fsm_build.o fsm_struct.o key_fsm.o main.o main_fsm.o sub_fsm.o
+mytelnet:$(object)
+	gcc -o $(object)
+common_fsm.o:telnet.h fsm_struct.h common_fsm.h main_fsm.h 
+#gcc -c common_fsm.c
+connect.o:telnet.h connect.h common_fsm.h
+#gcc -c connect.c
+fsm_build.o:telnet.h fsm_struct.h
+#gcc -c fsm_build.c
+fsm_struct.o:telnet.h fsm_struct.h main_fsm.h key_fsm.h sub_fsm.h common_fsm.h
+#gcc -c fsm_struct.c
+key_fsm.o:telnet.h fsm_struct.h common_fsm.h main_fsm.h key_fsm.h
+#gcc -c key_fsm.c
+main.o:telnet.h fsm_struct.h fsm_build.h connect.h common_fsm.h main_fsm.h
+#gcc -c main.c
+main_fsm.o:telnet.h fsm_struct.h common_fsm.h main_fsm.h
+#gcc -c main_fsm.c
+sub_fsm.o:telnet.h main_fsm.h
+#gcc -c sub_fsm.c
+clean:
+	rm mytelnet $(object)
+

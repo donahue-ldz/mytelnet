@@ -1,0 +1,147 @@
+首先介绍make实用程序的语法和常用选项，然后细剖makefile文件的组成。
+
+make命令
+
+make [选项] [目标] [宏定义]
+通过命令行参数中的target，可指定make要编译的目标，并且允许同时定义编译多个目标，操作时按照从左向右的顺序依次编译target选项中指定的目标文件。如果命令行中没有指定目标，则系统默认target指向描述文件中第一个目标文件。
+-d    显示调试信息
+-n    不运行任何makefile文件，只打印需要执行的命令
+-p    输出所有宏定义和目标文件描述
+-s    静止状态下运行，不显示任何命令行信息
+-f file    通知make程序从file中读取内部依赖说明，缺省情况下会读取makefile或者Makefile文件处理，文件名-表示读取标准输入，在Linux中，GNU make工具在当前工作目录中按照GNUmakefile、makefile、Makefile的顺序搜索makefile文件
+
+注意：在源文件没有被修改的情况下，运行make命令会生成一条消息，说源文件的可执行文件是最新的，不需要用make命令重新编译和链接。要强制再创建可执行代码，需要改变源文件的上次更新时间，可以使用touch命令，然后再次运行make命令。
+
+touch [选项] 文件或目录
+-r 文件或目录  把指定文件或目录的日期时间，设成和参考文件或目录的日期时间相同
+-d 日期时间     使用指定的日期时间，而非现在的时间 
+
+makefile规则
+
+make程序基于文件之间的依赖性，需要建立的目标文件，以及建立目标文件时要执行的命令，以上所有被称为规则，存放在文件makefile中。定制规则的语法如下：
+目标列表 : 关联性列表
+<TAB>命令列表
+注意：
+1.可以在关联性列表和命令列表中使用shell文件名模式匹配字符，例如?、*、[]等等。
+2.如果目标的命令列表中某个命令前面带有@，那么当make程序执行时，该命令是不会有反应的，在程序运行完毕之后，所有前面带@的命令按照反序执行。可以通过执行make -n命令显示这些命令以供查看。
+3.如果目标的命令列表中某个命令前面带有-，说明如果该命令执行有误，会跳过该命令并继续执行。
+
+make程序使用makefile中的规则决定程序中需要重新编译的文件，并再次链接生成可执行代码。如果源文件上修改的时间戳比目标文件上的时间戳更新，那么make重新编译build中包含的源文件。例如，如果修改了一个.h头文件，make程序就会重新编译所有包含该头文件的源文件，前提是头文件在这些源文件的目标文件的关联性列表中；再如某.c源文件被修改，那么该源文件被重新编译，生成对应的新的目标文件。
+myprog : foo.o bar.o
+    gcc –o myprog foo.o bar.o
+foo.o : foo.c foo.h bar.h
+    gcc –o foo.o –c foo.c
+bar.o : bar.c bar.h
+    gcc –o bar.o –c bar.c
+上述规则中，只要目标文件比冒号后面的文件任何一个旧，将会执行下一行的命令；但是在检查foo.o和bar.o的时间之前，会往下查找那些把foo.o和bar.o作为目标文件的规则；以此类推，并最终回到myprog规则。
+如何得到每个C文件的输出规则呢？可使用-M和-MM编译选项。注意：使用-M和-MM编译选项时，仅在shell中输出规则信息，不能用于产生可执行文件，即不能写成gcc -o hello -M hello.c这样的形式。
+gcc –M hello.c            //输出hello.c和该文件中所有<>和””包含的头文件
+gcc –MM hello.c        //仅输出hello.c和该文件中所有””包含的头文件
+
+后缀（隐含）规则
+
+make -p命令显示了所有后缀规则列表。为了建立一个目标，make使用程序会遍历一连串的依赖关系，从而决定从何处开始建立。如果没有找到目标文件，make程序按照优先顺序查找源文件，首先查找.c、.f或.s后缀的文件，然后再查找SCCS（带.c~后缀）文件，如果没有找到任何一个源文件，make程序就会报告一个异常。
+make程序知道调用gcc -c xxx.c -o xxx.o的预定义命令，而且还知道目标文件通常和源文件是相同的，这种功能称作标准依赖性，所以foo.o : foo.c foo.h bar.h这样的语句可以简写成foo.o : foo.h bar.h。同时，如果把生成foo.o和bar.o的命令从规则中删除，make将自动查找它的隐含规则（gcc -M/MM输出的代码），然后找到一个适当的命令，命令中会使用一些变量，并且按照一定步骤设定。
+因此，上述makefile的内容可以根据后缀规则简写成：
+myprog : foo.o bar.o
+    gcc –o myprog foo.o bar.o
+foo.o : foo.h bar.h
+bar.o : bar.h
+
+宏定义（变量）
+
+makefile中的变量定义可以存储文件名列表、可执行文件名以及编译器标识等，主要是使用如下方法：
+
+VAR=name     变量定义
+define VAR   
+    name
+endef        同上
+$(VAR)       使用变量，如果变量名为单字符，可以不使用圆括号或花括号
+${VAR}       同上
+$@           当前目标文件
+$*           删除了后缀的目标名
+$<           依赖列表中，比当前目标更新的当前依赖名称（即第一个依赖文件）
+$^           整个依赖列表
+$?           依赖列表中，比当前目标更新的当前依赖列表
+CFLAGS       通常默认值是-O，但是可以被修改
+未使用后缀规则的makefile文件变成如下：
+OBJS=foo.o bar.o
+SOURCES=foo.c bar.c
+HEADERS=foo.h bar.h
+CC=gcc
+CFLAGS=-Wall -O -g
+myprog : $(OBJS)
+    $(CC) $^ -o $@
+foo.o : foo.c foo.h bar.h
+    $(CC) $(CFLAGS) –c $< -o $@
+bar.o : bar.c bar.h
+    $(CC) $(CFLAGS) –c $< -o $@
+而使用了后缀规则的makefile文件变成如下：
+OBJS=foo.o bar.o
+SOURCES=foo.c bar.c
+HEADERS=foo.h bar.h
+CC=gcc
+myprog : $(OBJS)
+    $(CC) S^ -o $@
+foo.o : foo.h bar.h
+bar.o : bar.h
+
+虚目标
+
+假设一个项目最后需要产生两个可执行文件exec1和exec2，但两个文件是相互独立的，此时可使用假想目的all来达到效果。
+all : exec1 exec2
+all文件并不存在，make总是会假设它需要被生成，因此会检查它的依靠文件exec1和exec2是否需要更新，当把它的依靠文件更新后，就会执行它的规则里的命令行，但是在规则里没有哪个命令作用于名为all的实际文件，所以该规则并不真正改变all的状态。
+注意下面的语句用法，这些语句可以添加到makefile文件后：
+myprog.tar : makefile $(SOURCES) $(HEADERS)
+    tar -cvf $@ S^
+clean :
+    rm *.o
+当make命令不带参数执行时，最后两个目标myprog.tar和clean的命令不会执行，因为这些文件没有依赖文件。将这两个目标作为参数传递给make命令，可以调用与目标关联的命令。例如：执行make myprog.tar命令会执行tar -cvf myprog.tar makefile foo.c bar.c foo.h bar.h语句，而执行make clean命令会执行clean *.o语句。
+
+下面给出一个较完整的makefile文件：
+---------------------------------------------------------
+#Updated makefile that uses some built-in macros and
+#@-preceded commands
+define CC
+    gcc
+endef
+OPTIONS=-03
+OBJECTS=main.o input.o compute.o
+SOURCES=main.c input.c compute.c
+HEADERS=main.h input.h compute.h
+complete : power
+    @echo "Build complete"
+power : $(OBJECTS)
+    $(CC) $(OPTIONS) -o $@ $^ -lm
+    @echo "The executable is in the 'power' file"
+main.o : main.h input.h compute.h
+compute.o : compute.h
+input.o : input.h
+power.tar : makefile $(HEADERS) $(SOURCES)
+    tar -cvf $@ $^
+clean :
+    rm -f *.o
+-----------------------------------------------------
+执行结果为：
+-----------------------------------------------------
+$ make
+gcc -c main.c -o main.o
+gcc -c input.c -o input.o
+gcc -c compute.c -o compute.o
+gcc -o3 -o power main.o input.o compute.o -lm
+The executable is in the 'power' file
+Build complete
+$ make power.tar
+tar -cvf power.tar makefile main.h input.h compute.h main.c input.c compute.c
+makefile
+main.h
+input.h
+compute.h
+main.c
+input.c
+compute.c
+$ make clean
+rm -f *.o
+------------------------------------------------------
+
+
